@@ -1,0 +1,25 @@
+#!/bin/sh
+# Comprueba antes de hacer push, si hay commits para subir
+# Después lanza con npm run build de Node y si encuentra fallos lo aborta.
+
+# Check if there are commits to push
+commits=$(git log @{u}..)
+
+if [ -z "$commits" ]; then
+  echo "No commits to push"
+  exit 0
+fi
+
+# Run npm run build
+echo "Running npm run build.."
+npm run build
+
+# Check if build was successful
+if [ $? -ne 0 ]; then
+  echo "Build failed, aborting push"
+  exit 1
+fi
+
+# If we made it here, build was successful
+echo "Build successful, proceeding with push"
+exit 0

@@ -1,0 +1,53 @@
+#!/bin/bash
+# hook para primero comprobar si existe un write o print en el código y no dejar subirlo
+# y posteriormente comprobar si existen fixme o todo en el código y preguntar si se desea continuar
+# para lenguaje Natural Adabas
+
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+no_color='\033[0m'
+
+echo -e "\n${yellow}Executing pre-commit hook...${no_color}\n"
+
+FILES_PATTERN='\.(NSP)$'
+FORBIDDEN='(write)|(print)'
+warning='((\/\*\s+)|(^\*\s+))((fixme\s+)|(todo\s+))'
+
+#check for write
+if git diff --cached --name-only | \
+    grep -E $FILES_PATTERN | \
+    xargs grep -E --ignore-case --invert-match --with-filename --line-number  '^\*\s' | \
+    grep -E 'write\s*(work|[0-9])' --ignore-case --invert-match | \
+    grep -E '/\*\s*write' --ignore-case --invert-match | \
+    grep -E --ignore-case  $FORBIDDEN;
+
+then
+    echo -e "\n${red}COMMIT REJECTED!  Found write/print. references. Please remove them before committing.\n${no_color}"
+    exit 1;
+fi
+
+# warning de añadir fixme y todo
+if git diff --cached --name-only | \
+    grep -E $FILES_PATTERN | \
+    xargs grep -E --ignore-case --invert-match --with-filename --line-number  '^\*\s' | \
+    grep -E --ignore-case $warning;
+    
+    #awk '/^\*/' $ff| \
+    #grep --invert-match "^\*\s.*";
+then
+    exec < /dev/tty
+    echo -e "${yellow}"
+    read -p "Has añadido fixme or Todo, deseas continuar? (y/n): " yn
+    echo -e "${no_color}"
+    if [ $yn == "y" -o  $yn == "Y" ]
+    then
+        echo -e "${no_color}"
+    else
+        echo -e "${red}abortado por usuario.${no_color}"
+        exit 1;
+    fi
+fi
+
+echo -e "${green}Git pre-commit hook was successful!${no_color}\n"
+exit 0;

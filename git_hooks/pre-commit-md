@@ -1,0 +1,26 @@
+#!/bin/bash
+# Pre commit para lenguaje markdown, para comprobar que no existan etiquetas <style> en tus ficheros
+
+# Obtiene la lista de archivos que se van a comprometer
+FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Para cada archivo
+while IFS= read -r FILE; do
+  FILE=$(printf '%b' $FILE)
+  FILE="${FILE%\"}"
+  FILE="${FILE#\"}"
+
+  # Si es un archivo .md
+  echo "odentro $FILE"
+  if [[ "$FILE" == *.md ]]; then
+    # Busca la etiqueta <style> (ignorando mayúsculas/minúsculas y espacios adicionales)
+    if grep -iq "< *style" "$FILE"; then
+      # Si se encuentra la etiqueta, muestra una advertencia y aborta el commit
+      echo "Advertencia: Se encontró la etiqueta <style> en $FILE. Abortando commit."
+      exit 1
+    fi
+  fi
+done <<<"$FILES"
+
+# Si no se encontró la etiqueta <style> en ningún archivo .md, permite el commit
+exit 0
